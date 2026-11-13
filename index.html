@@ -390,14 +390,6 @@ function getKanjiStyle() {
     const sc = d < 3 ? 1 : 0.78 + Math.random() * 0.44;
     transform = `rotateX(${rx.toFixed(1)}deg) rotateY(${ry.toFixed(1)}deg) rotateZ(${rz.toFixed(1)}deg) scale(${sc.toFixed(2)})`;
   }
-  // 上下・左右反転: Q3以降
-  if (c >= 3) {
-    const fp = Math.min(0.70, 0.18 + (c - 3) * 0.07);
-    if (Math.random() < fp) {
-      const r = Math.random();
-      transform += r < 0.4 ? ' scaleX(-1)' : r < 0.8 ? ' scaleY(-1)' : ' scaleX(-1) scaleY(-1)';
-    }
-  }
   // フォント多様化: Q3以降
   const fontCount = Math.min(FONTS.length, 1 + Math.floor(Math.max(0, c - 3) / 3));
   const font = FONTS[Math.floor(Math.random() * fontCount)];
