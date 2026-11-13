@@ -104,7 +104,9 @@ body {
 .timer-wrap { width: 100%; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
 .timer-bar { height: 100%; border-radius: 3px; width: 100%; background: var(--gold); }
 
-.level-badge { font-size: .6rem; letter-spacing: .2em; color: var(--muted); text-transform: uppercase; margin-top: 5px; align-self: flex-start; }
+.timer-info { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+.level-badge { font-size: .6rem; letter-spacing: .2em; color: var(--muted); text-transform: uppercase; }
+.pot-score { font-size: .82rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--gold); letter-spacing: .03em; }
 
 /* 3D arena */
 .kanji-arena {
@@ -232,7 +234,10 @@ body {
     </div>
   </div>
   <div class="timer-wrap"><div class="timer-bar" id="el-timer"></div></div>
-  <div class="level-badge" id="el-level">LEVEL 1</div>
+  <div class="timer-info">
+    <div class="level-badge" id="el-level">LEVEL 1</div>
+    <div class="pot-score" id="el-pot">1000</div>
+  </div>
 
   <div class="kanji-arena">
     <div class="kanji-display" id="el-kanji">　</div>
@@ -291,8 +296,10 @@ function mk() {
     level:1, correct:0, wrong:0,
     targetType:null, answered:false, active:false,
     rafId:null, timerStart:0, timerDur:2500,
+    midTimers:[],
     btnLayout:['yamada','yamaguchi'],
     colorSwap:false,
+    baseTransform:'',
   };
 }
 
@@ -313,12 +320,22 @@ function startTimer() {
     const frac = Math.max(0, 1 - (now - g.timerStart) / g.timerDur);
     bar.style.width = (frac * 100) + '%';
     bar.style.background = frac > .5 ? 'var(--gold)' : frac > .25 ? '#ff9933' : 'var(--bad)';
+    // 時間が経つほど文字が大きくなる
+    const grow = 1 + (1 - frac) * 1.4;
+    const base = g.baseTransform ? g.baseTransform + ' ' : '';
+    S('el-kanji').style.transform = base + `scale(${grow.toFixed(3)})`;
+    // 獲得予定ポイント表示
+    S('el-pot').textContent = Math.max(100, Math.floor(1000 * frac));
     if (frac <= 0 && !g.answered) { onTimeout(); return; }
     if (!g.answered) g.rafId = requestAnimationFrame(tick);
   }
   g.rafId = requestAnimationFrame(tick);
 }
-function stopTimer() { if (g.rafId) { cancelAnimationFrame(g.rafId); g.rafId = null; } }
+function stopTimer() {
+  if (g.rafId) { cancelAnimationFrame(g.rafId); g.rafId = null; }
+  g.midTimers.forEach(t => clearTimeout(t));
+  g.midTimers = [];
+}
 
 // ---- HUD ----
 function updateHUD() {
@@ -380,6 +397,46 @@ function getKanjiStyle() {
   return { transform, font };
 }
 
+// ---- mid-round changes (10問目以降) ----
+function randomRotation() {
+  const d = diff();
+  const rx = (Math.random() - .5) * Math.min(40, d * 3.2) * 2;
+  const ry = (Math.random() - .5) * Math.min(70, d * 6) * 2;
+  const rz = (Math.random() - .5) * Math.min(14, d * 1.2) * 2;
+  return `rotateX(${rx.toFixed(1)}deg) rotateY(${ry.toFixed(1)}deg) rotateZ(${rz.toFixed(1)}deg)`;
+}
+
+function applyMidChange() {
+  if (!g.active || g.answered) return;
+  const type = Math.floor(Math.random() * 4);
+  if (type === 0) {
+    // ボタン左右入れ替え
+    g.btnLayout = g.btnLayout[0] === 'yamada' ? ['yamaguchi','yamada'] : ['yamada','yamaguchi'];
+    renderButtons(true);
+  } else if (type === 1) {
+    // フォント変更
+    S('el-kanji').style.fontFamily = FONTS[Math.floor(Math.random() * FONTS.length)];
+  } else if (type === 2) {
+    // 3D回転を新しくかける
+    g.baseTransform = randomRotation();
+  } else {
+    // 色スワップ
+    g.colorSwap = !g.colorSwap;
+    renderButtons(true);
+  }
+}
+
+function scheduleMidChanges() {
+  if (g.correct < 10) return;
+  const d = diff();
+  const count = Math.min(3, 1 + Math.floor((d - 7) / 3));
+  for (let i = 0; i < count; i++) {
+    // 表示時間の20〜75%のどこかで発動
+    const delay = (0.2 + Math.random() * 0.55) * g.timerDur;
+    g.midTimers.push(setTimeout(applyMidChange, delay));
+  }
+}
+
 // ---- round ----
 function nextRound() {
   if (!g.active) return;
@@ -391,6 +448,7 @@ function nextRound() {
 
   const style = getKanjiStyle();
   const el = S('el-kanji');
+  g.baseTransform = style.transform;
   el.style.transform = style.transform;
   el.style.filter = '';
   el.style.fontFamily = style.font;
@@ -402,9 +460,11 @@ function nextRound() {
 
   shuffleForRound();
   renderButtons(true);
+  S('el-pot').textContent = '1000';
 
   S('el-timer').style.width = '100%';
   startTimer();
+  scheduleMidChanges();
 }
 
 // ---- answer ----
@@ -426,6 +486,7 @@ function onAnswer(posIdx) {
   const ok = pressedType === g.targetType;
 
   const el = S('el-kanji');
+  el.style.transform = g.baseTransform; // growをリセット
   const pop = S('el-pop');
   const btn = S('btn-pos-' + posIdx);
 
@@ -433,8 +494,9 @@ function onAnswer(posIdx) {
     g.correct++;
     g.combo++;
     if (g.combo > g.maxCombo) g.maxCombo = g.combo;
-    const comboBonus = g.combo > 2 ? Math.floor((g.combo - 2) * .6) : 0;
-    const pts = g.level + comboBonus;
+    // 1問最大1000点、速度で決まる
+    const frac = Math.max(0, 1 - (performance.now() - g.timerStart) / g.timerDur);
+    const pts = Math.max(100, Math.floor(1000 * frac));
     g.score += pts;
     g.level = 1 + Math.floor(g.correct / 10);
 
@@ -442,7 +504,7 @@ function onAnswer(posIdx) {
     btn.classList.add('flash-ok');
     btn.addEventListener('animationend', () => btn.classList.remove('flash-ok'), { once: true });
 
-    pop.textContent = g.combo >= 3 ? '+' + pts + ' 🔥' : '+' + pts;
+    pop.textContent = pts === 1000 ? '1000 ⚡' : g.combo >= 3 ? '+' + pts + ' 🔥' : '+' + pts;
     pop.className = 'score-pop ok';
     void pop.offsetWidth;
     pop.classList.add('show');
@@ -470,6 +532,7 @@ function onAnswer(posIdx) {
 function onTimeout() {
   if (!g.active || g.answered) return;
   g.answered = true;
+  S('el-kanji').style.transform = g.baseTransform;
   g.combo = 0; g.lives--; g.wrong++;
   highlightCorrect();
 
