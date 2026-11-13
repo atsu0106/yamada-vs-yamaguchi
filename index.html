@@ -448,27 +448,38 @@ function nextRound() {
 
   const isY = Math.random() < .5;
   g.targetType = isY ? 'yamada' : 'yamaguchi';
-  const displayChar = isY ? '山田' : '山口';
 
   const style = getKanjiStyle();
   const el = S('el-kanji');
   g.baseTransform = style.transform;
-  el.style.transform = style.transform;
-  el.style.filter = '';
-  el.style.fontFamily = style.font;
 
+  // まず新しい内容をセットし、即座に非表示にする
+  el.style.opacity = '0';
+  el.textContent = isY ? '山田' : '山口';
+  el.style.fontFamily = style.font;
+  el.style.filter = '';
+  el.style.transform = style.transform;
   el.className = 'kanji-display';
-  void el.offsetWidth;
-  el.className = 'kanji-display anim-in';
-  el.textContent = displayChar;
 
   shuffleForRound();
-  renderButtons(true);
-  S('el-pot').textContent = '1000';
+  renderButtons(false); // アニメーションなしでテキスト・色だけ先に確定
 
+  S('el-pot').textContent = '1000';
   S('el-timer').style.width = '100%';
-  startTimer();
-  scheduleMidChanges();
+
+  // 次の描画フレームでアニメーション開始（古い内容が絶対に見えないタイミング）
+  requestAnimationFrame(() => {
+    el.style.opacity = '';
+    el.className = 'kanji-display anim-in';
+    for (let i = 0; i < 2; i++) {
+      const btn = S('btn-pos-' + i);
+      void btn.offsetWidth;
+      btn.classList.add('btn-appear');
+      btn.addEventListener('animationend', () => btn.classList.remove('btn-appear'), { once: true });
+    }
+    startTimer();
+    scheduleMidChanges();
+  });
 }
 
 // ---- answer ----
