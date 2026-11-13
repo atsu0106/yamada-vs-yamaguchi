@@ -1,7 +1,6 @@
 <title>山田 vs 山口</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700;900&family=Noto+Sans+JP:wght@700;900&family=Zen+Kaku+Gothic+New:wght@700;900&family=M+PLUS+1+Code:wght@700&display=swap">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 /* tokens — layout: full-screen portrait, 3D kanji arena, 3-button dock */
 :root {
@@ -612,44 +611,6 @@ function endGame() {
     `https://line.me/R/msg/text/?${encodeURIComponent(shareText + '\n' + gameUrl)}`;
 
   setTimeout(() => show('screen-over'), 250);
-}
-
-async function shareScreenshot() {
-  const btn = S('btn-share-any');
-  btn.textContent = '...';
-  btn.disabled = true;
-  try {
-    const target = S('screen-over');
-    const canvas = await html2canvas(target, {
-      backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0a0a0f',
-      scale: 2,
-      useCORS: true,
-      logging: false,
-    });
-    const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
-    const file = new File([blob], 'yamada-vs-yamaguchi.png', { type: 'image/png' });
-    // LINEリンクからシェアテキストを再取得
-    const lineHref = S('btn-share-line').href;
-    const txt = decodeURIComponent(lineHref.replace('https://line.me/R/msg/text/?', '').split('\n')[0] || '');
-    const shareData = { files: [file], text: txt + '\n' + 'https://atsu0106.github.io/yamada-vs-yamaguchi/' };
-
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share(shareData);
-    } else if (navigator.share) {
-      await navigator.share({ text: shareData.text });
-    } else {
-      // フォールバック: 画像をダウンロード
-      const a = document.createElement('a');
-      a.href = canvas.toDataURL('image/png');
-      a.download = 'yamada-vs-yamaguchi.png';
-      a.click();
-    }
-  } catch (e) {
-    if (e.name !== 'AbortError') console.error(e);
-  } finally {
-    btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> スクショでシェア';
-    btn.disabled = false;
-  }
 }
 
 // ---- BGM ----
