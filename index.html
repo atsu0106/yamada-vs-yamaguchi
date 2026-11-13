@@ -608,8 +608,6 @@ function endGame() {
   const gameUrl = 'https://atsu0106.github.io/yamada-vs-yamaguchi/';
   const shareText = (isNew ? `🏆 自己ベスト更新！ ` : '') +
     `「山田 vs 山口」で ${g.score} 点！ 正解 ${g.correct} 問 / 最大コンボ ${g.maxCombo}\n漢字の見分け、君はできる？`;
-  S('btn-share-x').href =
-    `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(gameUrl)}`;
   S('btn-share-line').href =
     `https://line.me/R/msg/text/?${encodeURIComponent(shareText + '\n' + gameUrl)}`;
 
@@ -630,12 +628,9 @@ async function shareScreenshot() {
     });
     const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
     const file = new File([blob], 'yamada-vs-yamaguchi.png', { type: 'image/png' });
-    const shareText = S('btn-share-x').href.includes('自己ベスト')
-      ? document.title : ''; // fallback
-
-    // テキストをendGameで設定済みのXリンクから再取得
-    const xHref = S('btn-share-x').href;
-    const txt = decodeURIComponent(xHref.split('text=')[1]?.split('&')[0] || '');
+    // LINEリンクからシェアテキストを再取得
+    const lineHref = S('btn-share-line').href;
+    const txt = decodeURIComponent(lineHref.replace('https://line.me/R/msg/text/?', '').split('\n')[0] || '');
     const shareData = { files: [file], text: txt + '\n' + 'https://atsu0106.github.io/yamada-vs-yamaguchi/' };
 
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
