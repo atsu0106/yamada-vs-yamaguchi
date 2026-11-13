@@ -1,6 +1,7 @@
 <title>山田 vs 山口</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700;900&family=Noto+Sans+JP:wght@700;900&family=Zen+Kaku+Gothic+New:wght@700;900&family=M+PLUS+1+Code:wght@700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 /* tokens — layout: full-screen portrait, 3D kanji arena, 3-button dock */
 :root {
@@ -194,8 +195,9 @@ body {
   transition: opacity .15s; text-decoration: none;
 }
 .share-btn:hover { opacity: .8; }
-.share-btn.x-btn  { background: #000; color: #fff; }
+.share-btn.x-btn    { background: #000; color: #fff; }
 .share-btn.line-btn { background: #06c755; color: #fff; }
+.share-btn.any-btn  { background: var(--card); color: var(--fg); border: 1.5px solid var(--border); }
 </style>
 
 <!-- TITLE -->
@@ -283,12 +285,16 @@ body {
   <div class="share-row">
     <a class="share-btn x-btn" id="btn-share-x" href="#" target="_blank" rel="noopener">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.74l7.73-8.835L1.254 2.25H8.08l4.253 5.622L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg>
-      X でシェア
+      X
     </a>
     <a class="share-btn line-btn" id="btn-share-line" href="#" target="_blank" rel="noopener">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
-      LINE でシェア
+      LINE
     </a>
+    <button class="share-btn any-btn" id="btn-share-any">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      スクショでシェア
+    </button>
   </div>
   <button class="retry-btn" id="btn-retry">もう一度</button>
 </div>
@@ -596,12 +602,14 @@ function startGame() {
   S('el-pop').className = 'score-pop';
   updateHUD();
   show('screen-game');
+  startBGM();
   setTimeout(nextRound, 420);
 }
 
 function endGame() {
   g.active = false;
   stopTimer();
+  stopBGM();
   const prev = getHigh();
   const isNew = g.score > prev;
   if (isNew) setHigh(g.score);
@@ -624,9 +632,109 @@ function endGame() {
   setTimeout(() => show('screen-over'), 250);
 }
 
+async function shareScreenshot() {
+  const btn = S('btn-share-any');
+  btn.textContent = '...';
+  btn.disabled = true;
+  try {
+    const target = S('screen-over');
+    const canvas = await html2canvas(target, {
+      backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0a0a0f',
+      scale: 2,
+      useCORS: true,
+      logging: false,
+    });
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+    const file = new File([blob], 'yamada-vs-yamaguchi.png', { type: 'image/png' });
+    const shareText = S('btn-share-x').href.includes('自己ベスト')
+      ? document.title : ''; // fallback
+
+    // テキストをendGameで設定済みのXリンクから再取得
+    const xHref = S('btn-share-x').href;
+    const txt = decodeURIComponent(xHref.split('text=')[1]?.split('&')[0] || '');
+    const shareData = { files: [file], text: txt + '\n' + 'https://atsu0106.github.io/yamada-vs-yamaguchi/' };
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share(shareData);
+    } else if (navigator.share) {
+      await navigator.share({ text: shareData.text });
+    } else {
+      // フォールバック: 画像をダウンロード
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = 'yamada-vs-yamaguchi.png';
+      a.click();
+    }
+  } catch (e) {
+    if (e.name !== 'AbortError') console.error(e);
+  } finally {
+    btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> スクショでシェア';
+    btn.disabled = false;
+  }
+}
+
+// ---- BGM ----
+let _ac = null, _bgmGain = null, _bgmOn = false;
+// G major pentatonic upbeat loop (notes: [freq_hz, beats])
+const _MELODY = [
+  [392,1],[440,1],[494,1],[392,1],[587,2],[494,1],[440,1],
+  [392,1],[440,1],[494,2],[440,1],[392,2],[0,1],
+  [494,1],[587,1],[659,1],[587,1],[784,2],[659,1],[587,1],
+  [494,1],[440,1],[392,2],[440,1],[392,4],
+];
+const _BASS = [
+  [196,4],[196,4],[247,4],[196,8],
+];
+function _initAC() {
+  if (_ac) return;
+  _ac = new (window.AudioContext || window.webkitAudioContext)();
+  _bgmGain = _ac.createGain();
+  _bgmGain.gain.value = 0.055;
+  _bgmGain.connect(_ac.destination);
+}
+function _schedVoice(notes, startT, beatLen, type, vol) {
+  let t = startT;
+  const loopDur = notes.reduce((s, [,b]) => s + b * beatLen, 0);
+  notes.forEach(([freq, beats]) => {
+    const dur = beats * beatLen;
+    if (freq > 0) {
+      const osc = _ac.createOscillator();
+      const env = _ac.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      env.gain.setValueAtTime(vol, t);
+      env.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.88);
+      osc.connect(env); env.connect(_bgmGain);
+      osc.start(t); osc.stop(t + dur);
+    }
+    t += dur;
+  });
+  return loopDur;
+}
+function _bgmLoop(t) {
+  if (!_bgmOn) return;
+  const beat = 0.13;
+  const dur = _schedVoice(_MELODY, t, beat, 'square', 1);
+  _schedVoice(_BASS, t, beat * 2, 'triangle', 0.6);
+  setTimeout(() => _bgmLoop(t + dur), (dur - 0.4) * 1000);
+}
+function startBGM() {
+  _initAC();
+  if (_ac.state === 'suspended') _ac.resume();
+  if (_bgmOn) return;
+  _bgmOn = true;
+  _bgmGain.gain.setTargetAtTime(0.055, _ac.currentTime, 0.3);
+  _bgmLoop(_ac.currentTime + 0.05);
+}
+function stopBGM() {
+  _bgmOn = false;
+  if (_bgmGain) _bgmGain.gain.setTargetAtTime(0, _ac.currentTime, 0.3);
+}
+
 // ---- events ----
 S('btn-start').addEventListener('click', startGame);
 S('btn-retry').addEventListener('click', startGame);
+S('btn-share-any').addEventListener('click', shareScreenshot);
 [0, 1].forEach(i => S('btn-pos-' + i).addEventListener('click', () => onAnswer(i)));
 
 document.addEventListener('keydown', e => {
