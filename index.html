@@ -318,9 +318,10 @@ function startTimer() {
     const frac = Math.max(0, 1 - (now - g.timerStart) / g.timerDur);
     bar.style.width = (frac * 100) + '%';
     bar.style.background = frac > .5 ? 'var(--gold)' : frac > .25 ? '#ff9933' : 'var(--bad)';
-    // 時間が経つほど文字が大きくなる
+    // 時間が経つほど文字が大きくなる（初期transformを保ちつつscaleのみ変化）
     const grow = 1 + (1 - frac) * 0.9;
-    S('el-kanji').style.transform = `scale(${grow.toFixed(3)})`;
+    const base = g.baseTransform ? g.baseTransform + ' ' : '';
+    S('el-kanji').style.transform = base + `scale(${grow.toFixed(3)})`;
     // 獲得予定ポイント表示
     S('el-pot').textContent = Math.max(100, Math.floor(1000 * frac));
     if (frac <= 0 && !g.answered) { onTimeout(); return; }
@@ -364,16 +365,35 @@ function renderButtons(animate) {
 }
 
 function shuffleForRound() {
-  // ボタン位置・色は固定（変化なし）
+  const c = g.correct;
+  // ボタン位置シャッフル: Q2以降
+  const p = c < 1 ? 0 : Math.min(0.82, 0.18 + c * 0.06);
+  if (Math.random() < p) g.btnLayout = g.btnLayout[0] === 'yamada' ? ['yamaguchi','yamada'] : ['yamada','yamaguchi'];
+  // 色スワップ: Q4以降
+  g.colorSwap = c >= 4 && Math.random() < Math.min(0.65, (c - 4) * 0.08 + 0.2);
 }
 
 // ---- kanji style ----
 function getKanjiStyle() {
+  const d = diff();
   const c = g.correct;
-  // フォント多様化のみ: Q3以降
+  // 3D回転: Q2以降（出題時点で適用、以降変化なし）
+  const tProb = c < 2 ? 0 : Math.min(0.92, 0.25 + c * 0.07);
+  let transform = '';
+  if (Math.random() < tProb) {
+    const maxX = Math.min(40, d * 3.2);
+    const maxY = Math.min(70, d * 6);
+    const maxZ = Math.min(14, d * 1.2);
+    const rx = (Math.random() - .5) * maxX * 2;
+    const ry = (Math.random() - .5) * maxY * 2;
+    const rz = (Math.random() - .5) * maxZ * 2;
+    const sc = d < 3 ? 1 : 0.85 + Math.random() * 0.3;
+    transform = `rotateX(${rx.toFixed(1)}deg) rotateY(${ry.toFixed(1)}deg) rotateZ(${rz.toFixed(1)}deg) scale(${sc.toFixed(2)})`;
+  }
+  // フォント多様化: Q3以降
   const fontCount = Math.min(FONTS.length, 1 + Math.floor(Math.max(0, c - 3) / 3));
   const font = FONTS[Math.floor(Math.random() * fontCount)];
-  return { transform: '', font };
+  return { transform, font };
 }
 
 // ---- mid-round changes (10問目以降) ----
