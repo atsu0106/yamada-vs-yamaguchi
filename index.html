@@ -296,8 +296,14 @@ function mk() {
   };
 }
 
+// diff = 0 during warmup (first 3), then increases each correct answer after that
+function diff() { return Math.max(0, g.correct - 3); }
+
 // ---- timer ----
-function timerDur() { return Math.max(650, 2600 - (g.level - 1) * 110); }
+function timerDur() {
+  if (g.correct < 3) return 1800;
+  return Math.max(560, 1700 - diff() * 90);
+}
 function startTimer() {
   stopTimer();
   g.timerStart = performance.now();
@@ -317,7 +323,7 @@ function stopTimer() { if (g.rafId) { cancelAnimationFrame(g.rafId); g.rafId = n
 // ---- HUD ----
 function updateHUD() {
   S('el-score').textContent = g.score;
-  S('el-level').textContent = 'LEVEL ' + g.level;
+  S('el-level').textContent = g.correct < 3 ? 'WARMUP' : 'LEVEL ' + g.level;
   S('el-lives').querySelectorAll('.life-icon').forEach((el, i) => el.classList.toggle('lost', i >= g.lives));
   S('el-combo').textContent = g.combo >= 3 ? '🔥 ' + g.combo + ' コンボ' : '';
 }
@@ -344,27 +350,32 @@ function renderButtons(animate) {
 }
 
 function shuffleForRound() {
-  const p = Math.min(0.82, 0.12 + (g.level - 1) * 0.08);
+  const d = diff();
+  // ボタン位置シャッフル: diff 2以降
+  const p = d < 2 ? 0 : Math.min(0.78, (d - 2) * 0.12);
   if (Math.random() < p) g.btnLayout = g.btnLayout[0] === 'yamada' ? ['yamaguchi','yamada'] : ['yamada','yamaguchi'];
-  g.colorSwap = g.level >= 3 && Math.random() < Math.min(0.48, (g.level - 3) * 0.07);
+  // 色スワップ: diff 6以降
+  g.colorSwap = d >= 6 && Math.random() < Math.min(0.45, (d - 6) * 0.08);
 }
 
 // ---- kanji style ----
 function getKanjiStyle() {
-  const lv = g.level;
-  const tProb = Math.min(0.93, 0.07 + lv * 0.09);
+  const d = diff();
+  // 3D回転: diff 1以降、徐々に激しく
+  const tProb = d < 1 ? 0 : Math.min(0.9, (d - 1) * 0.1);
   let transform = '';
   if (Math.random() < tProb) {
-    const maxX = Math.min(42, 5 + lv * 3);
-    const maxY = Math.min(70, 7 + lv * 5.5);
-    const maxZ = Math.min(15, 1 + lv * 1.2);
+    const maxX = Math.min(40, d * 3.2);
+    const maxY = Math.min(70, d * 6);
+    const maxZ = Math.min(14, d * 1.2);
     const rx = (Math.random() - .5) * maxX * 2;
     const ry = (Math.random() - .5) * maxY * 2;
     const rz = (Math.random() - .5) * maxZ * 2;
-    const sc = 0.78 + Math.random() * 0.44;
+    const sc = d < 3 ? 1 : 0.78 + Math.random() * 0.44;
     transform = `rotateX(${rx.toFixed(1)}deg) rotateY(${ry.toFixed(1)}deg) rotateZ(${rz.toFixed(1)}deg) scale(${sc.toFixed(2)})`;
   }
-  const fontCount = Math.min(FONTS.length, Math.max(1, Math.floor(lv / 2.5)));
+  // フォント多様化: diff 4以降
+  const fontCount = Math.min(FONTS.length, 1 + Math.floor(Math.max(0, d - 4) / 4));
   const font = FONTS[Math.floor(Math.random() * fontCount)];
   return { transform, font };
 }
