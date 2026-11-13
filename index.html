@@ -472,33 +472,24 @@ function nextRound() {
   const el = S('el-kanji');
   g.baseTransform = style.transform;
 
-  // まず新しい内容をセットし、即座に非表示にする
-  el.style.opacity = '0';
+  // 新コンテンツを先にセット（古いコンテンツがflashしないよう順番に注意）
   el.textContent = isY ? '山田' : '山口';
   el.style.fontFamily = style.font;
   el.style.filter = '';
   el.style.transform = style.transform;
+
+  // クラス変更でanim-inを再トリガー（void で強制リフロー）
   el.className = 'kanji-display';
+  void el.offsetWidth;
+  el.className = 'kanji-display anim-in';
 
   shuffleForRound();
-  renderButtons(false); // アニメーションなしでテキスト・色だけ先に確定
+  renderButtons(true);
 
   S('el-pot').textContent = '1000';
   S('el-timer').style.width = '100%';
-
-  // 次の描画フレームでアニメーション開始（古い内容が絶対に見えないタイミング）
-  requestAnimationFrame(() => {
-    el.style.opacity = '';
-    el.className = 'kanji-display anim-in';
-    for (let i = 0; i < 2; i++) {
-      const btn = S('btn-pos-' + i);
-      void btn.offsetWidth;
-      btn.classList.add('btn-appear');
-      btn.addEventListener('animationend', () => btn.classList.remove('btn-appear'), { once: true });
-    }
-    startTimer();
-    scheduleMidChanges();
-  });
+  startTimer();
+  scheduleMidChanges();
 }
 
 // ---- answer ----
