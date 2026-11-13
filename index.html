@@ -96,27 +96,27 @@ body {
 }
 .hud { width: 100%; display: flex; justify-content: space-between; align-items: flex-start; padding: 2px 0 6px; }
 .hud-score-label { display: block; font-size: .57rem; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); line-height: 1; margin-bottom: 2px; }
-.hud-score-val { font-size: 1.4rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
-.hud-lives { display: flex; gap: 3px; font-size: 1.2rem; align-items: center; padding-top: 4px; }
+.hud-score-val { font-size: clamp(1.6rem, 6vw, 2rem); font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+.hud-lives { display: flex; gap: 3px; font-size: clamp(1.4rem, 5vw, 1.7rem); align-items: center; padding-top: 4px; }
 .life-icon.lost { opacity: .2; filter: grayscale(1); }
-.hud-combo { font-size: .76rem; font-weight: 700; color: var(--gold); min-width: 60px; text-align: center; padding-top: 4px; font-variant-numeric: tabular-nums; }
+.hud-combo { font-size: clamp(.82rem, 3vw, 1rem); font-weight: 700; color: var(--gold); min-width: 60px; text-align: center; padding-top: 4px; font-variant-numeric: tabular-nums; }
 
 .timer-wrap { width: 100%; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
 .timer-bar { height: 100%; border-radius: 3px; width: 100%; background: var(--gold); }
 
 .timer-info { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
-.level-badge { font-size: .6rem; letter-spacing: .2em; color: var(--muted); text-transform: uppercase; }
-.pot-score { font-size: .82rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--gold); letter-spacing: .03em; }
+.level-badge { font-size: clamp(.62rem, 2.2vw, .75rem); letter-spacing: .2em; color: var(--muted); text-transform: uppercase; }
+.pot-score { font-size: clamp(.9rem, 3.5vw, 1.1rem); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--gold); letter-spacing: .03em; }
 
 /* 3D arena */
 .kanji-arena {
   flex: 1; display: flex; align-items: center; justify-content: center;
-  position: relative; width: 100%;
+  position: relative; width: 100%; overflow: hidden;
   perspective: 500px; perspective-origin: 50% 50%;
 }
 .kanji-display {
   font-family: 'Noto Serif JP', serif;
-  font-size: clamp(4.2rem, 21vw, 8.5rem);
+  font-size: clamp(5.5rem, 28vw, 11rem);
   font-weight: 900; line-height: 1; color: var(--fg);
   will-change: transform; backface-visibility: visible;
 }
@@ -147,8 +147,8 @@ body {
 .answer-row { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 480px; }
 .ans-btn {
   font-family: 'Noto Serif JP', serif;
-  font-size: clamp(1.5rem, 7vw, 2.3rem);
-  font-weight: 900; padding: 13px 4px 11px; border-radius: 18px; border: 2px solid;
+  font-size: clamp(1.9rem, 8.5vw, 2.8rem);
+  font-weight: 900; padding: 16px 6px 14px; border-radius: 18px; border: 2px solid;
   cursor: pointer; transition: transform .07s; line-height: 1;
   display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0;
 }
@@ -166,7 +166,7 @@ body {
 .ans-btn.btn-appear { animation: bAppear .17s cubic-bezier(.2,1.5,.4,1) both; }
 @keyframes bAppear { from { opacity:.15; transform:scaleY(.55); } to { opacity:1; transform:scaleY(1); } }
 .btn-label { display: block; }
-.btn-key { display: block; font-family: 'M PLUS 1 Code', monospace; font-size: clamp(.45rem, 1.7vw, .56rem); letter-spacing: .08em; opacity: .38; font-weight: 400; }
+.btn-key { display: block; font-family: 'M PLUS 1 Code', monospace; font-size: clamp(.6rem, 2.2vw, .72rem); letter-spacing: .08em; opacity: .38; font-weight: 400; }
 
 /* ===== GAME OVER ===== */
 #screen-over { gap: 20px; text-align: center; }
@@ -307,10 +307,8 @@ function mk() {
 function diff() { return Math.max(0, g.correct - 3); }
 
 // ---- timer ----
-function timerDur() {
-  if (g.correct < 3) return 1800;
-  return Math.max(560, 1700 - diff() * 90);
-}
+// Q1: 3600ms、Q20: ~1800ms、Q32+: 560ms固定
+function timerDur() { return Math.max(560, 3800 - g.correct * 100); }
 function startTimer() {
   stopTimer();
   g.timerStart = performance.now();
@@ -321,7 +319,7 @@ function startTimer() {
     bar.style.width = (frac * 100) + '%';
     bar.style.background = frac > .5 ? 'var(--gold)' : frac > .25 ? '#ff9933' : 'var(--bad)';
     // 時間が経つほど文字が大きくなる
-    const grow = 1 + (1 - frac) * 1.4;
+    const grow = 1 + (1 - frac) * 0.9;
     const base = g.baseTransform ? g.baseTransform + ' ' : '';
     S('el-kanji').style.transform = base + `scale(${grow.toFixed(3)})`;
     // 獲得予定ポイント表示
@@ -391,6 +389,14 @@ function getKanjiStyle() {
     const sc = d < 3 ? 1 : 0.78 + Math.random() * 0.44;
     transform = `rotateX(${rx.toFixed(1)}deg) rotateY(${ry.toFixed(1)}deg) rotateZ(${rz.toFixed(1)}deg) scale(${sc.toFixed(2)})`;
   }
+  // 上下・左右反転: diff 4以降
+  if (d >= 4) {
+    const fp = Math.min(0.55, (d - 4) * 0.08);
+    if (Math.random() < fp) {
+      const r = Math.random();
+      transform += r < 0.4 ? ' scaleX(-1)' : r < 0.8 ? ' scaleY(-1)' : ' scaleX(-1) scaleY(-1)';
+    }
+  }
   // フォント多様化: diff 4以降
   const fontCount = Math.min(FONTS.length, 1 + Math.floor(Math.max(0, d - 4) / 4));
   const font = FONTS[Math.floor(Math.random() * fontCount)];
@@ -408,7 +414,7 @@ function randomRotation() {
 
 function applyMidChange() {
   if (!g.active || g.answered) return;
-  const type = Math.floor(Math.random() * 4);
+  const type = Math.floor(Math.random() * 5);
   if (type === 0) {
     // ボタン左右入れ替え
     g.btnLayout = g.btnLayout[0] === 'yamada' ? ['yamaguchi','yamada'] : ['yamada','yamaguchi'];
@@ -419,10 +425,15 @@ function applyMidChange() {
   } else if (type === 2) {
     // 3D回転を新しくかける
     g.baseTransform = randomRotation();
-  } else {
+  } else if (type === 3) {
     // 色スワップ
     g.colorSwap = !g.colorSwap;
     renderButtons(true);
+  } else {
+    // 上下・左右反転
+    const r = Math.random();
+    const flip = r < 0.4 ? ' scaleX(-1)' : r < 0.8 ? ' scaleY(-1)' : ' scaleX(-1) scaleY(-1)';
+    g.baseTransform = (g.baseTransform || '') + flip;
   }
 }
 
