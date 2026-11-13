@@ -713,7 +713,6 @@ function stopBGM() {
 // ---- events ----
 S('btn-start').addEventListener('click', startGame);
 S('btn-retry').addEventListener('click', startGame);
-S('btn-share-any').addEventListener('click', shareScreenshot);
 [0, 1].forEach(i => S('btn-pos-' + i).addEventListener('click', () => onAnswer(i)));
 
 document.addEventListener('keydown', e => {
