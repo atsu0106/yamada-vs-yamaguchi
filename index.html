@@ -43,10 +43,10 @@ body {
 .screen[hidden] { display: none; }
 
 /* ===== TITLE ===== */
-#screen-title { gap: 20px; text-align: center; }
+#screen-title { justify-content: space-evenly; text-align: center; }
 .game-logo {
   font-family: 'Noto Serif JP', serif;
-  font-size: clamp(2.1rem, 9vw, 3.8rem);
+  font-size: clamp(4.2rem, 20vw, 7rem);
   font-weight: 900; letter-spacing: .06em; line-height: 1; margin: 0;
 }
 .game-logo .yd { color: var(--yamada); }
@@ -56,21 +56,21 @@ body {
 .char-compare { display: flex; gap: 8px; align-items: stretch; justify-content: center; flex-wrap: wrap; }
 .char-card {
   display: flex; flex-direction: column; align-items: center;
-  gap: 5px; padding: 12px 16px; border-radius: 14px; border: 1.5px solid;
+  gap: 8px; padding: 18px 28px; border-radius: 14px; border: 1.5px solid;
 }
 .char-card.yd { background: var(--yamada-dim); border-color: var(--yamada); }
 .char-card.yg { background: var(--yamaguchi-dim); border-color: var(--yamaguchi); }
 .char-card.dk { background: var(--skip-dim); border-color: var(--skip); }
-.char-kanji { font-family: 'Noto Serif JP', serif; font-size: 2.6rem; font-weight: 900; line-height: 1; }
+.char-kanji { font-family: 'Noto Serif JP', serif; font-size: clamp(3.5rem, 16vw, 5.5rem); font-weight: 900; line-height: 1; }
 .char-card.yd .char-kanji { color: var(--yamada); }
 .char-card.yg .char-kanji { color: var(--yamaguchi); }
-.char-card.dk .char-kanji { color: var(--skip); font-size: 1.5rem; line-height: 1.5; }
-.char-label { font-size: .62rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); }
-.char-hint { font-size: .72rem; color: var(--fg); opacity: .6; }
+.char-card.dk .char-kanji { color: var(--skip); font-size: clamp(2rem, 9vw, 3rem); line-height: 1.5; }
+.char-label { font-size: clamp(.8rem, 3.5vw, 1rem); font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); }
+.char-hint { font-size: clamp(.85rem, 3.8vw, 1.05rem); color: var(--fg); opacity: .6; }
 
 .diff-note {
   background: var(--card); border: 1px solid var(--border); border-radius: 12px;
-  padding: 11px 15px; font-size: .81rem; line-height: 1.65; max-width: 340px; color: var(--muted);
+  padding: 14px 18px; font-size: clamp(1rem, 4.2vw, 1.15rem); line-height: 1.65; max-width: 90%; color: var(--muted);
 }
 .diff-note strong { color: var(--fg); }
 .diff-note .ta { color: var(--yamada); font-family: 'Noto Serif JP', serif; font-weight: 700; }
@@ -81,8 +81,8 @@ body {
 .key-hint kbd { background: var(--card); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; font-family: inherit; font-size: .68rem; }
 
 .start-btn {
-  font-family: 'M PLUS 1 Code', monospace; font-size: .95rem; font-weight: 700;
-  letter-spacing: .12em; padding: 12px 36px; border-radius: 50px;
+  font-family: 'M PLUS 1 Code', monospace; font-size: clamp(1.2rem, 5.5vw, 1.6rem); font-weight: 700;
+  letter-spacing: .12em; padding: 16px 48px; border-radius: 50px;
   border: 2px solid var(--gold); background: transparent; color: var(--gold);
   cursor: pointer; transition: background .15s, color .15s;
 }
@@ -365,19 +365,20 @@ function renderButtons(animate) {
 }
 
 function shuffleForRound() {
-  const d = diff();
-  // ボタン位置シャッフル: diff 2以降
-  const p = d < 2 ? 0 : Math.min(0.78, (d - 2) * 0.12);
+  const c = g.correct;
+  // ボタン位置シャッフル: Q2以降、早期から高確率
+  const p = c < 1 ? 0 : Math.min(0.82, 0.18 + c * 0.06);
   if (Math.random() < p) g.btnLayout = g.btnLayout[0] === 'yamada' ? ['yamaguchi','yamada'] : ['yamada','yamaguchi'];
-  // 色スワップ: diff 6以降
-  g.colorSwap = d >= 6 && Math.random() < Math.min(0.45, (d - 6) * 0.08);
+  // 色スワップ: Q4以降
+  g.colorSwap = c >= 4 && Math.random() < Math.min(0.65, (c - 4) * 0.08 + 0.2);
 }
 
 // ---- kanji style ----
 function getKanjiStyle() {
   const d = diff();
-  // 3D回転: diff 1以降、徐々に激しく
-  const tProb = d < 1 ? 0 : Math.min(0.9, (d - 1) * 0.1);
+  const c = g.correct;
+  // 3D回転: Q2以降、早期から高確率
+  const tProb = c < 2 ? 0 : Math.min(0.92, 0.25 + c * 0.07);
   let transform = '';
   if (Math.random() < tProb) {
     const maxX = Math.min(40, d * 3.2);
@@ -389,16 +390,16 @@ function getKanjiStyle() {
     const sc = d < 3 ? 1 : 0.78 + Math.random() * 0.44;
     transform = `rotateX(${rx.toFixed(1)}deg) rotateY(${ry.toFixed(1)}deg) rotateZ(${rz.toFixed(1)}deg) scale(${sc.toFixed(2)})`;
   }
-  // 上下・左右反転: diff 4以降
-  if (d >= 4) {
-    const fp = Math.min(0.55, (d - 4) * 0.08);
+  // 上下・左右反転: Q3以降
+  if (c >= 3) {
+    const fp = Math.min(0.70, 0.18 + (c - 3) * 0.07);
     if (Math.random() < fp) {
       const r = Math.random();
       transform += r < 0.4 ? ' scaleX(-1)' : r < 0.8 ? ' scaleY(-1)' : ' scaleX(-1) scaleY(-1)';
     }
   }
-  // フォント多様化: diff 4以降
-  const fontCount = Math.min(FONTS.length, 1 + Math.floor(Math.max(0, d - 4) / 4));
+  // フォント多様化: Q3以降
+  const fontCount = Math.min(FONTS.length, 1 + Math.floor(Math.max(0, c - 3) / 3));
   const font = FONTS[Math.floor(Math.random() * fontCount)];
   return { transform, font };
 }
@@ -438,7 +439,7 @@ function applyMidChange() {
 }
 
 function scheduleMidChanges() {
-  if (g.correct < 10) return;
+  if (g.correct < 5) return;
   const d = diff();
   const count = Math.min(3, 1 + Math.floor((d - 7) / 3));
   for (let i = 0; i < count; i++) {
