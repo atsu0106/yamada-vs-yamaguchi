@@ -337,7 +337,8 @@ function startTimer() {
     bar.style.width = (frac * 100) + '%';
     bar.style.background = frac > .5 ? 'var(--gold)' : frac > .25 ? '#ff9933' : 'var(--bad)';
     // 時間が経つほど文字が大きくなる（初期transformを保ちつつscaleのみ変化）
-    const grow = 1 + (1 - frac) * 0.9;
+    const maxGrow = Math.min(2.4, 0.9 + g.correct * 0.075);
+    const grow = 1 + (1 - frac) * maxGrow;
     const base = g.baseTransform ? g.baseTransform + ' ' : '';
     S('el-kanji').style.transform = base + `scale(${grow.toFixed(3)})`;
     // 獲得予定ポイント表示
