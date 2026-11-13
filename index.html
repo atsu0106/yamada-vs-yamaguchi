@@ -120,7 +120,7 @@ body {
   font-weight: 900; line-height: 1; color: var(--fg);
   will-change: transform; backface-visibility: visible;
 }
-.kanji-display.anim-in { animation: kIn .16s cubic-bezier(.2,1.5,.4,1) both; }
+.kanji-display.anim-in { animation: kIn .09s ease-out both; }
 @keyframes kIn { from { opacity:0; } to { opacity:1; } }
 .kanji-display.anim-ok  { animation: kOk .28s ease both; }
 @keyframes kOk  { 0% { color:var(--good); } 100% { color:var(--fg); } }
@@ -163,8 +163,8 @@ body {
 @keyframes bOk   { 0%   { filter:brightness(2.5); } 100% { filter:brightness(1); } }
 @keyframes bErr  { 0%,60%{ filter:brightness(.3) saturate(0); } 100% { filter:brightness(1); } }
 @keyframes bHint { 0%,50%{ filter:brightness(2.8) saturate(1.5); transform:scale(1.08); } 100% { filter:brightness(1); transform:scale(1); } }
-.ans-btn.btn-appear { animation: bAppear .17s cubic-bezier(.2,1.5,.4,1) both; }
-@keyframes bAppear { from { opacity:.15; transform:scaleY(.55); } to { opacity:1; transform:scaleY(1); } }
+.ans-btn.btn-appear { animation: bAppear .10s ease-out both; }
+@keyframes bAppear { from { opacity:.35; transform:scaleY(.7); } to { opacity:1; transform:scaleY(1); } }
 .btn-label { display: block; }
 .btn-key { display: block; font-family: 'M PLUS 1 Code', monospace; font-size: clamp(.6rem, 2.2vw, .72rem); letter-spacing: .08em; opacity: .38; font-weight: 400; }
 
@@ -538,7 +538,7 @@ function onAnswer(posIdx) {
 
   updateHUD();
   if (!ok && g.lives <= 0) { setTimeout(endGame, 480); return; }
-  setTimeout(() => { pop.className = 'score-pop'; nextRound(); }, 340);
+  setTimeout(() => { pop.className = 'score-pop'; nextRound(); }, 180);
 }
 
 function onTimeout() {
@@ -556,7 +556,7 @@ function onTimeout() {
 
   updateHUD();
   if (g.lives <= 0) { setTimeout(endGame, 480); return; }
-  setTimeout(() => { pop.className = 'score-pop'; nextRound(); }, 500);
+  setTimeout(() => { pop.className = 'score-pop'; nextRound(); }, 280);
 }
 
 // ---- game flow ----
