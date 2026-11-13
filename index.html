@@ -439,7 +439,7 @@ function applyMidChange() {
 }
 
 function scheduleMidChanges() {
-  if (g.correct < 5) return;
+  return; // 一問一変化のみ
   const d = diff();
   const count = Math.min(3, 1 + Math.floor((d - 7) / 3));
   for (let i = 0; i < count; i++) {
